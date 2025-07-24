@@ -406,7 +406,7 @@ function runPacking() {
     return;
   }
   let allRects = films.map(f => ({width: f.width, height: f.height}));
-  fetch('http://localhost:8000/optimize', {
+  fetch('/optimize', {
     method: 'POST',
     headers: {'Content-Type': 'application/json'},
     body: JSON.stringify({
