@@ -1,4 +1,4 @@
 Flask
 flask_cors
-rectpack==0.2.6
+rectpack
 gunicorn
