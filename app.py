@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, render_template
 from flask_cors import CORS
 from rectpack import newPacker, MaxRectsBssf, MaxRectsBaf, SkylineMwfl, SkylineBl, GuillotineBssfSas
 
@@ -71,9 +71,13 @@ def optimize():
         print('Error in /optimize:', e)
         return jsonify({"error": str(e)}), 500
 
-@app.route('/')
-def serve_index():
-    return send_from_directory('.', 'index.html')
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+@app.route("/user")
+def user_index():
+    return render_template("userindex.html")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
