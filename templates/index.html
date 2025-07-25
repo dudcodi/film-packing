@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>필름 최적 배치 시뮬레이터</title>
+  <style>
+    :root {
+      --main-bg: #f7f8fa;
+      --card-bg: #fff;
+      --border: #e3e5e8;
+      --accent: #2d68f6;
+      --subtle: #f1f3f7;
+      --text: #212529;
+      --shadow: 0 2px 10px 0 rgba(20,23,28,0.07);
+      --radius: 12px;
+    }
+    body {
+      margin: 0;
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      background: var(--main-bg);
+      color: var(--text);
+    }
+    .wrap {
+      max-width: 960px;
+      margin: 42px auto 42px auto;
+      padding: 32px 32px 44px 32px;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+    }
+    h2 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 28px 0;
+      letter-spacing: -0.5px;
+    }
+    .form-row {
+      display: flex;
+      gap: 14px;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+    .form-row input[type="number"] {
+      padding: 9px 14px;
+      border-radius: var(--radius);
+      border: 1.5px solid var(--border);
+      width: 120px;
+      background: var(--subtle);
+      font-size: 1.1em;
+      transition: border 0.2s;
+    }
+    .form-row input:focus {
+      border: 1.5px solid var(--accent);
+      outline: none;
+    }
+    .form-row button {
+      background: var(--accent);
+      color: #fff;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius);
+      font-size: 1.08em;
+      padding: 10px 24px;
+      cursor: pointer;
+      transition: background 0.15s;
+      margin-left: 4px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+    }
+    .form-row button:hover {
+      background: #2056d5;
+    }
+    .hint {
+      color: #7e8692;
+      font-size: 1.01em;
+      margin-bottom: 26px;
+      margin-top: -10px;
+      padding-left: 2px;
+    }
+    .film-list {
+      margin: 22px 0 28px 0;
+      padding: 18px 18px 8px 18px;
+      border: 1.5px solid var(--border);
+      background: var(--subtle);
+      border-radius: var(--radius);
+      min-height: 52px;
+      font-size: 1.13em;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px 10px;
+      align-items: flex-start;
+    }
+    .film-tag {
+      display: inline-flex;
+      align-items: center;
+      background: #e5edfb;
+      color: #204794;
+      font-weight: 500;
+      border-radius: 20px;
+      padding: 7px 16px 7px 14px;
+      margin-bottom: 10px;
+      font-size: 1em;
+      border: 1px solid #c1d1f7;
+      transition: background 0.18s;
+    }
+    .film-tag button {
+      background: transparent;
+      color: #6882ba;
+      font-weight: bold;
+      font-size: 1.1em;
+      border: none;
+      margin-left: 8px;
+      cursor: pointer;
+      padding: 0;
+      border-radius: 50%;
+      width: 20px;
+      height: 20px;
+      line-height: 1;
+      transition: background 0.15s;
+    }
+    .film-tag button:hover {
+      background: #deecff;
+    }
+    #canvas-area {
+      width: 100%;
+      background: var(--subtle);
+      border-radius: var(--radius);
+      padding: 34px 0 34px 0;
+      margin-bottom: 16px;
+      box-sizing: border-box;
+      border: 1.5px solid var(--border);
+      max-height: 700px;
+      overflow-y: auto !important;
+      min-height: 350px;
+      display: block;
+      position: relative;
+    }
+    #canvas {
+      display: block;
+      width: 100%;
+      max-width: none;
+    }
+    .loading-bg {
+      position: fixed; z-index: 9999; top: 0; left: 0; width: 100vw; height: 100vh;
+      background: rgba(255,255,255,0.72); display: flex; align-items: center; justify-content: center;
+      backdrop-filter: blur(3px);
+    }
+    .loading-inner {
+      display: flex; flex-direction: column; align-items: center; 
+    }
+    .loading-dots {
+      font-size: 2.7rem; color: #2d68f6; letter-spacing: 0.2em;
+      margin-bottom: 9px;
+      display: flex;
+      font-weight: 900;
+    }
+    .loading-dots span {
+      opacity: 0.22;
+      animation: loading-dot-ani 1.1s infinite;
+      margin: 0 2px;
+    }
+    .loading-dots span:nth-child(1) { animation-delay: 0s; }
+    .loading-dots span:nth-child(2) { animation-delay: 0.25s; }
+    .loading-dots span:nth-child(3) { animation-delay: 0.5s; }
+    @keyframes loading-dot-ani {
+      0%, 60%, 100% { opacity: 0.2; }
+      20% { opacity: 1; }
+    }
+    .loading-text {
+      font-size: 1.2em; color: #4467a6; font-weight: 600;
+      letter-spacing: -0.01em;
+    }
+    .blur {
+      filter: blur(2.5px) grayscale(5%);
+      pointer-events: none;
+      user-select: none;
+    }
+    @media (max-width:700px){
+      .wrap{padding:11px 2vw;}
+      #canvas-area {padding:4vw 0;}
+      #canvas {max-width:99vw;}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap" id="main-wrap">
+    <h2>필름 최적 배치 시뮬레이터</h2>
+    <div class="form-row">
+      <input type="number" id="rect-width" placeholder="가로(cm)" min="1" max="3000">
+      <input type="number" id="rect-height" placeholder="세로(cm)" min="1" max="3000">
+      <input type="number" id="rect-count" placeholder="수량" min="1" max="50">
+      <button onclick="onAddFilm()">필름 추가</button>
+      <button onclick="runPacking()">최적배치</button>
+    </div>
+    <div class="film-list" id="film-list"></div>
+    <div id="canvas-length-info" style="margin-bottom:8px; font-weight:500; color:#1346aa; display:flex; justify-content:space-between; align-items:center;">
+      <span id="canvas-length-text"></span>
+      <span id="canvas-order-count" style="color:#1752d2;"></span>
+    </div>
+    <div id="canvas-area">
+      <canvas id="canvas" width="950" height="350"></canvas>
+    </div>
+  </div>
+  <!-- 로딩/블러 -->
+  <div class="loading-bg" id="loading-bg" style="display:none;">
+    <div class="loading-inner">
+      <div class="loading-dots">
+        <span>.</span><span>.</span><span>.</span>
+      </div>
+      <div class="loading-text">최적 배치 계산 중</div>
+    </div>
+  </div>
+<script>
+const CANVAS_WIDTH_CM = 150;
+const MAX_CANVAS_LENGTH_CM = 3000;
+const MIN_CANVAS_HEIGHT_PX = 340;
+const MAX_CANVAS_HEIGHT_PX = 99999;
+const SCALE = 6;
+const TICK_EVERY = 50;
+
+let films = [];
+let packedRects = [];
+let draggingIdx = null;
+let dragOffset = {x:0, y:0};
+let dragStart = {x:0, y:0};
+let prevPosition = {x:0, y:0};
+
+// === 필름 입력/리스트 ===
+function onAddFilm() {
+  let width = parseFloat(document.getElementById('rect-width').value);
+  let height = parseFloat(document.getElementById('rect-height').value);
+  let count = parseInt(document.getElementById('rect-count').value) || 1;
+  if (!width || !height || count < 1) {
+    alert('가로/세로/수량을 모두 입력하세요.');
+    return;
+  }
+  if (width > 150) {
+    alert('가로(폭)이 150cm를 넘는 필름은 추가할 수 없습니다.');
+    return;
+  }
+  for (let i = 0; i < count; i++) {
+    films.push({ width, height });
+  }
+  updateFilmList();
+  clearCanvas();
+}
+function updateFilmList() {
+  const countMap = {};
+  films.forEach((f) => {
+    // ✅ width/height 순서를 정렬해서 같은 크기 묶기
+    let w = Math.min(f.width, f.height);
+    let h = Math.max(f.width, f.height);
+    const key = `${w}×${h}`;
+    countMap[key] = (countMap[key] || 0) + 1;
+  });
+  const filmArray = Object.keys(countMap).map((key) => {
+    const [width, height] = key.split("×").map(Number);
+    const count = countMap[key];
+    return { width, height, count };
+  });
+  let html = filmArray
+    .map(
+      (f, i) =>
+        `<span class="film-tag">
+          ${f.width}×${f.height}cm
+          <b style="color:#1254aa; margin:0 3px;">(${f.count}개)</b>
+          <button onclick="removeFilmGroup(${f.width},${f.height})" title="삭제">&times;</button>
+        </span>`
+    )
+    .join("");
+  if (!html) html = "<span style='color:#b8bac1'>추가된 필름이 없습니다.</span>";
+  document.getElementById('film-list').innerHTML = html;
+}
+function removeFilmGroup(width, height) {
+  for (let i = films.length - 1; i >= 0; i--) {
+    if (films[i].width === width && films[i].height === height) {
+      films.splice(i, 1);
+    }
+  }
+  updateFilmList();
+  clearCanvas();
+}
+function clearCanvas() {
+  packedRects = [];
+  drawCanvas(MIN_CANVAS_HEIGHT_PX);
+  document.getElementById('canvas-length-text').textContent = '';
+  document.getElementById('canvas-order-count').textContent = '';
+}
+
+// === 캔버스 그리기 ===
+function getMaxNeededCanvasHeightPx() {
+  if (!packedRects.length) return MIN_CANVAS_HEIGHT_PX;
+  let max = 0;
+  packedRects.forEach(r => {
+    let y = r.y || 0;
+    let h = (r.rot ? r.width : r.height) * SCALE;
+    max = Math.max(max, y*SCALE + h);
+  });
+  return Math.min(Math.max(max + 70, MIN_CANVAS_HEIGHT_PX), MAX_CANVAS_HEIGHT_PX);
+}
+
+function drawCanvas(minHeightPx = MIN_CANVAS_HEIGHT_PX) {
+  const canvas = document.getElementById('canvas');
+  const widthPx = Math.ceil(CANVAS_WIDTH_CM * SCALE + 100);
+  let heightPx = minHeightPx;
+  let usedLengthCm = 0;
+
+  if (packedRects.length) {
+    // --- 여기 부분이 핵심! ---
+    // 모든 사각형의 (y + height) 최대값을 찾아서 heightPx로 씀
+    let maxY = 0;
+    packedRects.forEach(r => {
+      let y = r.y || 0;
+      let h = r.height;
+      maxY = Math.max(maxY, y + h);
+    });
+    // +여유, minHeightPx 보장
+    heightPx = Math.max(maxY * SCALE + 70, MIN_CANVAS_HEIGHT_PX);
+    usedLengthCm = maxY;
+  }
+
+  canvas.width = widthPx;
+  canvas.height = heightPx;
+  const lengthText = document.getElementById('canvas-length-text');
+  const orderCount = document.getElementById('canvas-order-count');
+  if (packedRects.length) {
+    lengthText.textContent = `총 사용한 캔버스 길이: ${usedLengthCm.toFixed(1)}cm`;
+    let count = Math.ceil(usedLengthCm / 50);
+    let displayText = (count > 9) ? `${count}+1개` : `${count}개`;  // ✅ 요기
+    orderCount.textContent = `총 결제수량: ${displayText}`;
+  } else {
+    lengthText.textContent = "";
+    orderCount.textContent = "";
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
+  // 배경/눈금자
+  ctx.fillStyle = '#f7f8fa';
+  ctx.fillRect(50, 30, CANVAS_WIDTH_CM*SCALE, heightPx-70);
+  ctx.strokeStyle = '#222';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(50, 30, CANVAS_WIDTH_CM*SCALE, heightPx-70);
+
+  ctx.fillStyle = "#506083";
+  ctx.font = "13px Pretendard, sans-serif";
+  for (let x=0; x<=CANVAS_WIDTH_CM; x+=TICK_EVERY) {
+    let xpos = 50 + x*SCALE;
+    ctx.beginPath();
+    ctx.moveTo(xpos, 26);
+    ctx.lineTo(xpos, 30);
+    ctx.lineWidth = (x%100==0) ? 2 : 1;
+    ctx.stroke();
+    if (x%50==0 || x==CANVAS_WIDTH_CM) ctx.fillText(x, xpos-9, 20);
+  }
+  ctx.fillText("(cm)", 50+CANVAS_WIDTH_CM*SCALE+8, 21);
+
+  for (let y=0; y<=(heightPx-70)/SCALE; y+=TICK_EVERY) {
+    let ypos = 30 + y*SCALE;
+    ctx.beginPath();
+    ctx.moveTo(46, ypos);
+    ctx.lineTo(50, ypos);
+    ctx.lineWidth = (y%500==0) ? 2 : 1;
+    ctx.stroke();
+    if (y%50==0) ctx.fillText(y, 12, ypos+5);
+  }
+  ctx.save();
+  ctx.translate(13, 40+(heightPx-70)/2);
+  ctx.rotate(-Math.PI/2);
+  ctx.fillText("(cm)", 0, 0);
+  ctx.restore();
+
+// ==== 사각형들 그리기 ====
+packedRects.forEach((rect, i) => {
+    let x = rect.x || 0, y = rect.y || 0;
+    let w = rect.width * SCALE;
+    let h = rect.height * SCALE;
+
+    ctx.save();
+    if (i === draggingIdx) {
+      ctx.globalAlpha = 0.58;
+      ctx.strokeStyle = "#20d7b9";
+      ctx.fillStyle = "#b6ffe0";
+    } else {
+      ctx.globalAlpha = 0.46;
+      ctx.strokeStyle = "#2d68f6";
+      ctx.fillStyle = "#b6d2fd";
+    }
+    ctx.lineWidth = 2;
+    ctx.strokeRect(50+x*SCALE, 30+y*SCALE, w, h);
+    ctx.fillRect(50+x*SCALE, 30+y*SCALE, w, h);
+
+    ctx.globalAlpha = 1.0;
+    ctx.fillStyle = "#1346aa";
+    ctx.font = "bold 14px Pretendard, sans-serif";
+    let label = rect.rot ? `${rect.height}×${rect.width} [회전]` : `${rect.width}×${rect.height}`;
+    ctx.fillText(label, 58+x*SCALE, 44+y*SCALE+18);
+
+    ctx.restore();
+});
+
+}
+
+// === 배치 알고리즘 ===
+// 이 부분을 서버 fetch로 바꿔도 됨! (주석 참고)
+
+
+function runPacking() {
+  if (films.length === 0) {
+    alert('필름을 먼저 추가하세요!');
+    return;
+  }
+  let allRects = films.map(f => ({width: f.width, height: f.height}));
+  fetch(/*'/optimize'*/'http://localhost:8000/optimize', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({
+      rects: allRects,
+      canvas_width: 150,
+      allow_rotate: true,
+      canvas_maxlen: 3000
+    })
+  })
+  .then(res => res.json())
+  .then(data => {
+    // ===== 여기서 각 알고리즘별 결과 로그 출력 =====
+    Object.keys(data).forEach(key => {
+      if (key.startsWith("_")) return; // _best_algo 등 제외
+      if (data[key] && typeof data[key].used_length === "number") {
+        console.log(`[${key}] 최종 사용 길이: ${data[key].used_length}cm`);
+      }
+    });
+    // =============================================
+
+    if (data._best_algo && data[data._best_algo]) {
+      const algoName = data._best_algo;
+      const bestResult = data[algoName];
+      packedRects = bestResult.packed.map(r => ({
+        x: r.x,
+        y: r.y,
+        width: r.width,
+        height: r.height,
+        rot: r.rotated
+      }));
+      document.getElementById('canvas-length-text').textContent =
+        `총 사용한 캔버스 길이: ${bestResult.used_length.toFixed(1)}cm (알고리즘: ${algoName})`;
+      drawCanvas();
+    } else {
+      alert("최적 결과를 찾지 못했습니다.");
+      packedRects = [];
+      drawCanvas();
+    }
+  })
+  .catch(e => {
+    alert('서버 연결 오류');
+    packedRects = [];
+    drawCanvas();
+  });
+}
+
+
+
+// ==== 드래그/스냅/회전 ====
+const canvas = document.getElementById('canvas');
+
+canvas.addEventListener('mousedown', function(e) {
+  const mouse = getMousePos(e);
+  for (let i = packedRects.length - 1; i >= 0; i--) {
+    if (isInside(mouse, packedRects[i])) {
+      draggingIdx = i;
+      dragOffset.x = mouse.x - (packedRects[i].x || 0) * SCALE;
+      dragOffset.y = mouse.y - (packedRects[i].y || 0) * SCALE;
+      dragStart.x = packedRects[i].x || 0;
+      dragStart.y = packedRects[i].y || 0;
+      prevPosition = {x: dragStart.x, y: dragStart.y};
+      break;
+    }
+  }
+});
+canvas.addEventListener('mousemove', function(e) {
+  if (draggingIdx === null) return;
+  const mouse = getMousePos(e);
+  let nx = (mouse.x - dragOffset.x) / SCALE;
+  let ny = (mouse.y - dragOffset.y) / SCALE;
+  let rect = packedRects[draggingIdx];
+  rect.x = nx;
+  rect.y = ny;
+  drawCanvas();
+});
+const SNAP_DISTANCE_CM = 50;
+canvas.addEventListener('mouseup', function(e) {
+  if (draggingIdx === null) return;
+  let rect = packedRects[draggingIdx];
+  let nx = rect.x || 0, ny = rect.y || 0;
+  let best = snapToClosestValidPosition(draggingIdx, nx, ny);
+  rect.x = best.x;
+  rect.y = best.y;
+  draggingIdx = null;
+  drawCanvas();
+});
+canvas.addEventListener('dblclick', function(e) {
+  const mouse = getMousePos(e);
+  for (let i = packedRects.length - 1; i >= 0; i--) {
+    if (isInside(mouse, packedRects[i])) {
+      let rect = packedRects[i];
+      // 회전: width/height 값 교체!
+      [rect.width, rect.height] = [rect.height, rect.width];
+      rect.rot = !rect.rot; // 회전 상태만 표기
+      drawCanvas();
+      break;
+    }
+  }
+});
+
+
+function getMousePos(evt) {
+  const rect = canvas.getBoundingClientRect();
+  return {
+    x: evt.clientX - rect.left,
+    y: evt.clientY - rect.top
+  };
+}
+function isInside(mouse, rect) {
+  let x = rect.x || 0, y = rect.y || 0;
+  let w = rect.width;
+  let h = rect.height;
+  return (
+    mouse.x >= 50 + x * SCALE &&
+    mouse.x <= 50 + (x + w) * SCALE &&
+    mouse.y >= 30 + y * SCALE &&
+    mouse.y <= 30 + (y + h) * SCALE
+  );
+}
+function isOverlap(a, b) {
+  let ax = a.x || 0, ay = a.y || 0, aw = a.width, ah = a.height;
+  let bx = b.x || 0, by = b.y || 0, bw = b.width, bh = b.height;
+  return !(ax + aw <= bx || bx + bw <= ax || ay + ah <= by || by + bh <= ay);
+}
+
+function snapToClosestValidPosition(rectIdx, dropX, dropY) {
+  let rect = packedRects[rectIdx];
+  let w = rect.width, h = rect.height;
+  let groups = [];
+  groups.push([{ x: 0, y: 0 }]);
+  let corners = [];
+  packedRects.forEach((r, idx) => {
+    if (idx === rectIdx) return;
+    let rx = r.x || 0, ry = r.y || 0;
+    let rw = r.width;
+    let rh = r.height;
+    corners.push({ x: rx, y: ry });
+    corners.push({ x: rx + rw, y: ry });
+    corners.push({ x: rx, y: ry + rh });
+    corners.push({ x: rx + rw, y: ry + rh });
+  });
+  groups.push(corners);
+  groups.push([{ x: CANVAS_WIDTH_CM - w, y: 0 }]);
+  let edges = [
+    { x: 0, y: dropY },
+    { x: dropX, y: 0 },
+    { x: CANVAS_WIDTH_CM - w, y: dropY }
+  ];
+  groups.push(edges);
+
+  let selectedCorners = [
+    { dx: 0, dy: 0 },
+    { dx: w, dy: 0 },
+    { dx: 0, dy: h },
+    { dx: w, dy: h }
+  ];
+
+  let minDist = Infinity;
+  let bestPos = { x: prevPosition.x, y: prevPosition.y };
+  for (let group of groups) {
+    for (let pos of group) {
+      for (let corner of selectedCorners) {
+        let nx = pos.x - corner.dx;
+        let ny = pos.y - corner.dy;
+        if (
+          nx < 0 || ny < 0 ||
+          nx + w > CANVAS_WIDTH_CM ||
+          ny + h > MAX_CANVAS_LENGTH_CM
+        ) continue;
+        let tempRect = { ...rect, x: nx, y: ny };
+        let overlap = packedRects.some((r, idx) => idx !== rectIdx && isOverlap(tempRect, r));
+        if (overlap) continue;
+        let dist = Math.sqrt(Math.pow(nx - dropX, 2) + Math.pow(ny - dropY, 2));
+        if (dist < minDist) {
+          minDist = dist;
+          bestPos = { x: nx, y: ny };
+        }
+      }
+    }
+    if (bestPos !== null && minDist <= SNAP_DISTANCE_CM) {
+      return bestPos;
+    }
+  }
+  return { x: dropX, y: dropY };
+}
+
+
+window.onload = ()=>drawCanvas();
+
+</script>
+</body>
+</html>
