@@ -1,0 +1,628 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>필름 주문 계산기</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- Pretendard Variable 폰트 -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/variable/pretendardvariable-jp.css">
+  <style>
+    :root {
+      --bg: #f7f8fa;
+      --card: #fff;
+      --blue: #3887f6;
+      --blue-dark: #2561b3;
+      --gray: #eaecef;
+      --gray-dark: #b8bdc7;
+      --txt-main: #222b44;
+      --txt-sub: #96a0b5;
+      --radius-xl: 20px;
+      --radius-md: 13px;
+      --shadow: 0 8px 32px rgba(30,44,90,0.09);
+      --shadow-card: 0 2px 8px rgba(30,44,90,0.09);
+    }
+    body {
+      font-family: 'Pretendard Variable', 'Inter', 'Noto Sans KR', 'Apple SD Gothic Neo', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--txt-main);
+      margin: 0;
+      min-height: 100vh;
+      min-width: 320px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      height: 100vh;
+    }
+    .main-center {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+    }
+    .main-card {
+      background: var(--card);
+      border-radius: var(--radius-xl);
+      box-shadow: var(--shadow);
+      max-width: 560px;   /* 기존보다 크게! */
+      width: 97vw;
+      padding: 36px 46px 40px 46px;  /* 전체적으로 패딩 더 주기 */
+      gap: 36px;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      min-width: 288px;
+    }
+    .logo {
+      text-align: center;
+      font-size: 1.6em;
+      font-weight: 800;
+      letter-spacing: -0.6px;
+      margin-top: -10px;
+      margin-bottom: 0;
+    }
+.film-input-flex {
+  display: flex;
+  gap: 13px;
+  margin-top: 0 !important;
+  margin-bottom: 0;
+  width: 100%;
+  align-items: center;
+}
+.film-input-flex input {
+  flex: 1 1 0;
+  min-width: 0;
+  border: 1.4px solid var(--gray);
+  border-radius: var(--radius-md);
+  font-size: 1.07em;
+  padding: 12px 10px;
+  background: #f9fbfc;
+  color: var(--txt-main);
+  outline: none;
+  text-align: left;
+  transition: border .17s, box-shadow .14s;
+  box-shadow: none;
+  font-family: inherit;
+  font-weight: 500;
+}
+    .film-input-flex input:focus {
+      border-color: var(--blue);
+      background: #f1f6ff;
+      box-shadow: 0 0 0 2px #e4eafd;
+    }
+.add-btn {
+  border: none;
+  border-radius: 12px;
+  background: var(--blue);
+  color: #fff;
+  font-size: 1.05em;
+  font-weight: 700;
+  padding: 0 22px;
+  height: 48px;
+  min-width: 120px;
+  cursor: pointer;
+  transition: background .15s, box-shadow .15s;
+  box-shadow: none;
+  white-space: nowrap;
+  letter-spacing: 0px;
+  margin-left: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+    .add-btn:hover { background: var(--blue-dark); }
+    .hint {
+      font-size: 0.96em;
+      color: var(--txt-sub);
+      margin: 4px 0 2px 2px;    /* 위쪽 4px, 왼쪽 2px 정도만! */
+      font-weight: 500;
+      letter-spacing: 0;
+      text-align: left;
+    }
+    .hint-above {
+      display: block;
+      width: 100%;
+      font-size: 0.99em;
+      color: #b3b9c8;
+      text-align: left;
+      margin-bottom: -24px !important;
+      margin-left: 2px;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.2;
+    }
+    .hint-under {
+      display: block;
+      width: 100%;
+      font-size: 0.99em;
+      color: #b3b9c8;
+      text-align: left;
+      margin-left: 2px;
+      font-weight: 500;
+      letter-spacing: 0;
+      line-height: 1.2;
+    }
+    .film-list-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      margin-top: 5px;
+      min-height: 40px;
+    }
+    .film-card {
+      display: grid;
+      grid-template-columns: 1.1fr 0.8fr 32px;
+      align-items: center;
+      background: #f9fbfc;
+      border-radius: 16px;
+      box-shadow: 0 2px 8px rgba(30,44,90,0.10);
+      border: 1.1px solid #eaecef;
+      padding: 16px 22px 16px 22px;
+      font-size: 1.12em;
+      font-weight: 500;
+      margin-bottom: 6px;
+    }
+    @keyframes popin {
+      from { opacity: 0; transform: translateY(40px) scale(.98);}
+      to { opacity: 1; transform: none;}
+    }
+    @keyframes pulse {
+      0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(56,135,246, 0.0);
+      }
+      50% {
+        transform: scale(1.04);
+        box-shadow: 0 0 12px rgba(56,135,246, 0.35);
+      }
+    }
+    @keyframes flash {
+      0%, 100% {
+        background-color: var(--blue);
+        box-shadow: none;
+      }
+      50% {
+        background-color: #4a9aff;
+        box-shadow: 0 0 12px rgba(56,135,246, 0.5);
+      }
+    }
+    .calc-btn.flashy {
+      animation: flash 1.4s infinite;
+    }
+
+    .calc-btn.attention {
+      animation: pulse 1.8s infinite;
+    }
+
+    .film-size {
+      font-family: 'Inter', 'Pretendard Variable', sans-serif;
+      font-weight: 550;         /* 900 -> 600 또는 500 */
+      font-size: 1.06em;         /* 폰트 크기도 약간 줄이고 싶으면 */
+      letter-spacing: 0px;   /* 자간 더 붙게(마이너스 크게!) */
+      color: #232c3d;
+    }
+    .film-count { color: var(--txt-sub); font-size: 0.9em; margin-top: -4px; margin-left: 6px;}
+    .remove-btn {
+      background: none;
+      border: none;
+      color: var(--gray-dark);
+      font-size: 1.19em;
+      font-weight: 700;
+      cursor: pointer;
+      border-radius: 50%;
+      width: 29px; height: 29px;
+      display: flex; align-items: center; justify-content: center;
+      transition: background .13s, color .13s;
+      margin-left: 7px;
+    }
+    .remove-btn:hover { color: var(--blue); background: #f1f6ff; }
+    .empty-list {
+      text-align: center;
+      color: var(--txt-sub);
+      font-size: 1.03em;
+      padding: 17px 0 5px 0;
+      font-weight: 400;
+    }
+    .calc-btn {
+      width: 100%;
+      background: var(--blue);
+      color: #fff;
+      font-size: 1.22em;
+      font-weight: 600;
+      border: none;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 7px 28px rgba(49,120,246,0.13);
+      padding: 28px 0 26px 0;
+      cursor: pointer;
+      margin-top: 20px;
+      transition: background .16s;
+    }
+    .calc-btn:hover { background: var(--blue-dark);}
+    /* 로딩바 모달 */
+    .loading-bg {
+      display: none;
+      position: fixed; z-index: 99;
+      top:0; left:0; width:100vw; height:100vh;
+      background: rgba(36,50,74,0.14);
+      backdrop-filter: blur(3px);
+      justify-content: center;
+      align-items: center;
+      animation: fadeinbg 0.22s;
+    }
+    .loading-modal {
+      background: #fff;
+      border-radius: 26px;
+      box-shadow: 0 12px 56px rgba(30,44,90,0.17);
+      padding: 56px 40px 36px 40px;  /* 상하좌우 크게 */
+      min-width: 330px;    /* 기존보다 더 넓게 */
+      max-width: 96vw;
+      text-align: center;
+      border: 1.4px solid #eaecef;
+      animation: popin .35s cubic-bezier(.5,1.7,.56,1.01);
+    }
+    .loading-title {
+      font-size: 1.36em;
+      font-weight: 800;
+      color: #343d4c;
+      margin-bottom: 28px;
+      line-height: 1.4;
+      letter-spacing: -0.2px;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 13px;    /* 두께 크게 */
+      border-radius: 8px;
+      background: #f2f4f7;
+      overflow: hidden;
+      margin: 0 auto 21px auto;
+    }
+    .progress-inner {
+      height: 100%;
+      width: 0;
+      border-radius: 8px;
+      background: linear-gradient(90deg,var(--blue-dark) 20%,var(--blue) 80%,#eee 100%);
+      transition: width 0.18s cubic-bezier(.67,.05,.36,.98);
+    }
+    .loading-desc {
+      color: #99a1ae;
+      font-size: 1.05em;
+      margin-top: 6px;
+      letter-spacing: -0.04em;
+      font-weight: 500;
+    }
+    /* 팝업 */
+    .modal-bg {
+      display: none;
+      position: fixed; z-index: 99;
+      top:0; left:0; width:100vw; height:100vh;
+      background: rgba(36,50,74,0.14);
+      backdrop-filter: blur(3.5px);
+      justify-content: center;
+      align-items: center;
+    }
+    .modal {
+      background: #fff;
+      border-radius: var(--radius-xl);
+      box-shadow: 0 8px 38px rgba(20,32,60,0.15);
+      padding: 42px 34px 29px 34px;
+      min-width: 220px;
+      text-align: center;
+      border: 1.5px solid var(--gray);
+      animation: popin .35s cubic-bezier(.5,1.7,.56,1.01);
+    }
+    .modal-title {
+      font-size: 1.19em;
+      font-weight: 800;
+      margin-bottom: 13px;
+      color: var(--blue-dark);
+    }
+    .modal-count {
+      font-size: 2.5em;
+      color: var(--txt-main);
+      font-weight: 900;
+      margin-bottom: 10px;
+      letter-spacing: 0;
+    }
+    .modal-btn {
+      margin-top: 12px;
+      padding: 11px 0;
+      width: 100%;
+      font-size: 1.06em;
+      background: #f4f7fa;
+      border: none;
+      color: var(--blue-dark);
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      font-weight: 700;
+      transition: background 0.13s;
+    }
+    .modal-btn:hover { background: var(--blue); color: #fff; }
+
+@media (max-width: 500px) {
+  body {
+    background: var(--bg);
+  }
+  .main-center {
+    min-height: 100vh;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 0;
+  }
+  .main-card {
+    width: 96vw;
+    max-width: 420px;
+    min-width: 0;
+    padding: 36px 3vw 110px 3vw;   /* 위쪽 여백 36px(충분하게!) */
+    border-radius: 16px;
+    margin: 0 auto;
+    margin-top: 10px;
+    box-sizing: border-box;
+    gap: 14px;
+    box-shadow: 0 2px 14px rgba(30,44,90,0.06);
+    min-height: calc(100vh - 20px);
+    padding-bottom: 30px;  /* 하단 여백 */
+    background: var(--card);
+  }
+  .logo {
+    font-size: 1.24em;
+    margin-bottom: 14px;
+    font-weight: 800;
+    text-align: center;
+  }
+  .film-input-flex {
+    flex-direction: row !important;  /* 항상 한 줄 */
+    gap: 7px;
+    width: 100%;
+    justify-content: left;
+    align-items: left ;
+  }
+  .film-input-flex input {
+    max-width: 70px;
+    min-width: 0;
+    font-size: 1em;
+    padding: 11px 7px;
+    border-radius: 10px;
+    text-align: left;
+  }
+  .film-input-flex input::placeholder {
+    font-size: 0.85em;
+    color: #b6bbc6;
+    font-weight: 500;
+    opacity: 1;
+  }
+  .film-input-flex input:focus {
+    background: #eaf3ff;
+  }
+  /* ----------- add-btn만 완전 아래로 내림 ----------- */
+  .add-btn {
+    width: 92px;
+    min-width: 60px;
+    font-size: 0.98em;
+    font-weight: 500;
+    margin-left: 7px;
+    margin-top: 0;
+    border-radius: 11px;
+    height: 44px;
+    padding: 0 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .add-btn:active {
+    background: #2365d7;
+  }
+  .hint {
+    font-size: 0.98em;
+    margin: 2px 0 20px 1px;
+    text-align: left;              /* 한 줄로 딱 중앙 정렬! */
+    display: block;
+    width: 100%;
+    color: #949daf;
+  }
+  .hint-above {
+    margin-bottom: -2px !important;
+    margin-left: 2px;
+    font-size: 0.88em;
+  }
+  .hint-under {
+    margin-top: 4px !important;
+    margin-left: 2px;
+    font-size: 0.88em;
+  }
+  .film-list-wrap {
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .film-card {
+    padding: 11px 9px;
+    font-size: 1.01em;
+    border-radius: 12px;
+    margin-bottom: 2px;
+  }
+  /* 하단 플로팅 계산 버튼 */
+  .calc-btn {
+    position: fixed;
+    left: 0; right: 0; bottom: 22px;  /* ← 하단에서 22px 띄움! */
+    margin: 0 auto;
+    width: 100%;
+    max-width: 300px;
+    border-radius: 18px;
+    z-index: 50;
+    padding: 14px 20px;
+    font-size: 1.13em;
+    box-shadow: 0 6px 28px 0 rgba(30,44,90,0.10);
+    background: var(--blue);
+    transition: background .17s;
+    font-weight: 700;
+    border: none;
+  }
+}
+
+
+
+  </style>
+</head>
+<body>
+  <div class="main-center">
+    <div class="main-card">
+      <div class="logo">필름 주문 계산기</div>
+      <div class="hint hint-above">*가로(폭)는 <b>150cm</b> 이하만 입력 가능</div>
+      <div class="film-input-flex">
+        <input type="number" id="rect-width" placeholder="가로(cm)" min="1" max="150" required>
+        <input type="number" id="rect-height" placeholder="세로(cm)" min="1" max="3000" required>
+        <input type="number" id="rect-count" placeholder="수량(개)" min="1" max="100" required>
+        <button class="add-btn" onclick="onAddFilm()">+ 필름 추가</button>
+      </div>
+      <div class="hint hint-under">원하는 필름 모두 추가 후 <b>총 수량 계산하기</b> 버튼 클릭하기</div>
+      <div class="film-list-wrap" id="film-list-wrap">
+        <div class="empty-list" id="film-empty-msg">추가된 필름이 없습니다.</div>
+      </div>
+      <button class="calc-btn" onclick="onCalc()">총 수량 계산하기</button>
+    </div>
+  </div>
+  <!-- 로딩바 모달 -->
+  <div class="loading-bg" id="loading-bg">
+    <div class="loading-modal">
+      <div class="loading-title">필름 결제 수량을 계산하고<br>알려드릴게요!</div>
+      <div class="progress-bar">
+        <div class="progress-inner" id="progress-inner"></div>
+      </div>
+      <div class="loading-desc">최적화 배치 중 입니다...</div>
+    </div>
+  </div>
+  <!-- 결과 모달 -->
+  <div class="modal-bg" id="modal-bg">
+    <div class="modal">
+      <div class="modal-title">총 결제 수량</div>
+      <div class="modal-count" id="modal-count">-</div>
+      <button class="modal-btn" onclick="closeModal()">확인</button>
+    </div>
+  </div>
+  <script>
+    let films = [];
+    function onAddFilm() {
+      const width = parseFloat(document.getElementById('rect-width').value);
+      const height = parseFloat(document.getElementById('rect-height').value);
+      const count = parseInt(document.getElementById('rect-count').value);
+      if (!width || !height || !count) {
+        alert('가로/세로/수량을 모두 입력하세요.');
+        return;
+      }
+      if (width > 150) {
+        alert('가로(폭)는 150cm 이하만 입력 가능합니다.');
+        return;
+      }
+      let found = false;
+      const [nw, nh] = [Math.min(width, height), Math.max(width, height)];
+      for (let film of films) {
+        const [fw, fh] = [Math.min(film.width, film.height), Math.max(film.width, film.height)];
+        if (fw === nw && fh === nh) {
+          film.count += count;
+          found = true;
+          break;
+        }
+      }
+      if (!found) films.push({ width: nw, height: nh, count });
+      updateFilmList();
+      document.getElementById('rect-width').value = '';
+      document.getElementById('rect-height').value = '';
+      document.getElementById('rect-count').value = '';
+    }
+
+    function updateFilmList() {
+      const wrap = document.getElementById('film-list-wrap');
+      wrap.innerHTML = '';
+      if (films.length === 0) {
+        document.getElementById('film-empty-msg').style.display = '';
+        wrap.appendChild(document.getElementById('film-empty-msg'));
+        return;
+      }
+      films.forEach((film, idx) => {
+        const div = document.createElement('div');
+        div.className = "film-card";
+        div.innerHTML = `
+          <span class="film-size">${film.width}×${film.height} cm</span>
+          <span class="film-count">(${film.count}개)</span>
+          <button class="remove-btn" title="삭제" onclick="removeFilm(${idx})">×</button>
+        `;
+        wrap.appendChild(div);
+      });
+      const calcBtn = document.querySelector('.calc-btn');
+      if (films.length > 0) {
+        calcBtn.classList.add('flashy'); //flashy 아니면 attention
+      } else {
+        calcBtn.classList.remove('flashy'); //flashy 아니면 attention
+      }
+    }
+    function removeFilm(idx) {
+      films.splice(idx, 1);
+      updateFilmList();
+    }
+    function showLoadingBar() {
+      document.getElementById('loading-bg').style.display = 'flex';
+      // 애니메이션용 progress
+      const bar = document.getElementById('progress-inner');
+      bar.style.width = '0';
+      setTimeout(() => { bar.style.width = '80%'; }, 80); // 부드럽게
+      setTimeout(() => { bar.style.width = '99%'; }, 2000);
+    }
+    function hideLoadingBar() {
+      document.getElementById('loading-bg').style.display = 'none';
+      document.getElementById('progress-inner').style.width = '0';
+    }
+
+    // onCalc에서 변경
+    function onCalc() {
+      if (films.length === 0) {
+        alert('필름을 먼저 추가하세요.');
+        return;
+      }
+      showLoadingBar();
+      setTimeout(() => {
+        hideLoadingBar();
+        // 원래 계산 fetch 코드 ↓
+        let rects = [];
+        films.forEach(film => {
+          for (let i = 0; i < film.count; i++) {
+            rects.push({ width: film.width, height: film.height });
+          }
+        });
+        fetch('http://localhost:8000/optimize', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({
+            rects,
+            canvas_width: 150,
+            allow_rotate: true,
+            canvas_maxlen: 3000
+          })
+        })
+        .then(res => res.json())
+        .then(data => {
+          let orderCount = "-";
+          if (data._best_algo && data[data._best_algo]) {
+            const usedLength = data[data._best_algo].used_length;
+            let count = Math.ceil(usedLength / 50);
+            if (count > 9) count += 1;  // 10개 초과면 +1
+            orderCount = `${count}개`;   // n+1로 보이지 않게!
+          }
+          document.getElementById('modal-count').textContent = orderCount;
+          document.getElementById('modal-bg').style.display = "flex";
+        })
+        .catch(() => {
+          alert("서버 연결 오류 또는 계산 실패");
+        });
+      }, 2000); // 2초 동안 로딩
+    }
+    function closeModal() {
+      document.getElementById('modal-bg').style.display = "none";
+    }
+    document.querySelectorAll('.film-input-flex input').forEach(inp => {
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') onAddFilm();
+      });
+    });
+    updateFilmList();
+  </script>
+</body>
+</html>
