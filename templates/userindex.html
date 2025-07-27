@@ -123,7 +123,7 @@
       display: block;
       width: 100%;
       font-size: 0.99em;
-      color: #f54949;
+      color: #b3b9c8;
       text-align: left;
       margin-bottom: -24px !important;
       margin-left: 2px;
@@ -268,21 +268,21 @@
       line-height: 1.4;
       letter-spacing: -0.2px;
     }
-    .progress-bar {
-      width: 100%;
-      height: 13px;    /* 두께 크게 */
-      border-radius: 8px;
-      background: #f2f4f7;
-      overflow: hidden;
-      margin: 0 auto 21px auto;
-    }
-    .progress-inner {
-      height: 100%;
-      width: 0;
-      border-radius: 8px;
-      background: linear-gradient(90deg,var(--blue-dark) 20%,var(--blue) 80%,#eee 100%);
-      transition: width 0.18s cubic-bezier(.67,.05,.36,.98);
-    }
+.progress-bar {
+  width: 100%;
+  height: 12px;
+  background: #e0e0e0;
+  border-radius: 100px;
+  overflow: hidden;
+  position: relative;
+}
+.progress-inner {
+  height: 100%;
+  width: 0;
+  border-radius: 8px;
+  background: linear-gradient(90deg,var(--blue-dark) 20%,var(--blue) 80%,#eee 100%);
+  transition: width 2s ease-in-out;  /* 천천히 2초 동안 증가 */
+}
     .loading-desc {
       color: #99a1ae;
       font-size: 1.05em;
@@ -429,6 +429,7 @@
     margin-left: 2px;
     font-size: 0.88em;
   }
+  .film-count { color: var(--txt-sub); font-size: 0.9em; margin-top: 0; margin-left: 6px;}
   .film-list-wrap {
     gap: 6px;
     margin-top: 10px;
@@ -570,18 +571,33 @@
         calcBtn.classList.remove('attention'); //flashy 아니면 attention
       }
     }
+
+    const widthInput = document.getElementById('rect-width');
+    const hintAbove = document.querySelector('.hint-above');
+
+    function updateHintColor() {
+      const value = parseFloat(widthInput.value);
+      if (value > 150) {
+        hintAbove.style.color = '#ff3333'; // 빨간색 경고
+        hintAbove.style.fontWeight = '700';
+      } else {
+        hintAbove.style.color = '#b3b9c8';
+        hintAbove.style.fontWeight = '500';
+      }
+    }
+
+    widthInput.addEventListener('input', updateHintColor);
+
     function removeFilm(idx) {
       films.splice(idx, 1);
       updateFilmList();
     }
-    function showLoadingBar() {
-      document.getElementById('loading-bg').style.display = 'flex';
-      // 애니메이션용 progress
-      const bar = document.getElementById('progress-inner');
-      bar.style.width = '0';
-      setTimeout(() => { bar.style.width = '80%'; }, 80); // 부드럽게
-      setTimeout(() => { bar.style.width = '99%'; }, 2000);
-    }
+function showLoadingBar() {
+  document.getElementById('loading-bg').style.display = 'flex';
+  const bar = document.getElementById('progress-inner');
+  bar.style.width = '0'; // 초기화
+  setTimeout(() => { bar.style.width = '100%'; }, 50); // 부드럽게 2초 애니메이션
+}
     function hideLoadingBar() {
       document.getElementById('loading-bg').style.display = 'none';
       document.getElementById('progress-inner').style.width = '0';
@@ -593,6 +609,19 @@
         alert('필름을 먼저 추가하세요.');
         return;
       }
+
+      // ⛔ 총 세로길이 확인
+      let totalHeight = 0;
+      films.forEach(film => {
+        for (let i = 0; i < film.count; i++) {
+          totalHeight += Math.max(film.height, film.width);
+        }
+      });
+      if (totalHeight > 3000) {
+        alert('전체 필름 길이가 3000cm를 초과할 수 없습니다.\n필름을 줄이거나 수량을 조정해주세요.');
+        return;
+      }
+
       showLoadingBar();
       setTimeout(() => {
         hideLoadingBar();
