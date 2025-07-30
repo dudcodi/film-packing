@@ -600,6 +600,20 @@ function snapToClosestValidPosition(rectIdx, dropX, dropY) {
 
 window.onload = ()=>drawCanvas();
 
+// === 엔터키로 필름 추가 ===
+document.addEventListener("DOMContentLoaded", () => {
+  const inputs = ["rect-width", "rect-height", "rect-count"];
+  inputs.forEach(id => {
+    const input = document.getElementById(id);
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        onAddFilm(); // 필름 추가 함수 실행
+      }
+    });
+  });
+});
 </script>
+
 </body>
 </html>
